@@ -1,9 +1,9 @@
-module Phoenix.Socket exposing (Socket, Msg, init, initWithParams, update, withDebug, join, leave, push, on, off, listen, withoutHeartbeat, withHeartbeatInterval, map)
+module Phoenix.Socket exposing (Socket, Msg, init, withPayload, update, withDebug, join, leave, push, on, off, listen, withoutHeartbeat, withHeartbeatInterval, map)
 
 {-|
 
 # Socket
-@docs Socket, Msg, init, initWithParams, withDebug, withoutHeartbeat, withHeartbeatInterval, update, listen, map
+@docs Socket, Msg, init, withPayload, withDebug, withoutHeartbeat, withHeartbeatInterval, update, listen, map
 
 # Channels
 @docs join, leave
@@ -32,6 +32,7 @@ import QueryString
 -}
 type alias Socket msg =
     { path : String
+    , payload : String
     , debug : Bool
     , channels : Dict String (Channel msg)
     , events : Dict ( String, String ) (JE.Value -> msg)
@@ -58,6 +59,7 @@ type Msg msg
 init : String -> Socket msg
 init path =
     { path = path
+    , payload = ""
     , debug = False
     , channels = Dict.fromList []
     , events = Dict.fromList []
@@ -68,22 +70,22 @@ init path =
     }
 
 
-{-| Initializes a `Socket` with the given path and params
+{-| Adds a payload to the `Socket`
 -}
-initWithParams : String -> Dict String String -> Socket msg
-initWithParams path params =
+withPayload : Socket msg -> Dict String String -> Socket msg
+withPayload socket payload =
     let
-        paramsList =
-            params |> Dict.toList
+        params =
+            payload |> Dict.toList
 
         add =
             \( k, v ) -> QueryString.add k v
 
-        queryString =
-            List.foldl add QueryString.empty paramsList
+        payload_ =
+            List.foldl add QueryString.empty params
                 |> QueryString.render
     in
-        init (path ++ queryString)
+        { socket | payload = payload_ }
 
 
 {-| -}
@@ -285,8 +287,8 @@ off eventName channelName socket =
 
 
 send : Socket msg -> String -> String -> JE.Value -> Cmd (Msg msg)
-send { path, ref } event channel payload =
-    sendMessage path (Message event channel payload (Just ref))
+send { path, payload, ref } event channel message =
+    sendMessage (path ++ payload) (Message event channel message (Just ref))
 
 
 sendMessage : String -> Message -> Cmd (Msg msg)
@@ -320,8 +322,8 @@ mapAll fn internalMsg =
 
 
 phoenixMessages : Socket msg -> Sub (Maybe Message)
-phoenixMessages socket =
-    WebSocket.listen socket.path decodeMessage
+phoenixMessages { path, payload } =
+    WebSocket.listen (path ++ payload) decodeMessage
 
 
 debugIfEnabled : Socket msg -> String -> String
