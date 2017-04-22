@@ -1,9 +1,9 @@
-module Phoenix.Socket exposing (Socket, Msg, init, update, withDebug, join, leave, push, on, off, listen, withoutHeartbeat, withHeartbeatInterval, map)
+module Phoenix.Socket exposing (Socket, Msg, init, initWithParams, update, withDebug, join, leave, push, on, off, listen, withoutHeartbeat, withHeartbeatInterval, map)
 
 {-|
 
 # Socket
-@docs Socket, Msg, init, withDebug, withoutHeartbeat, withHeartbeatInterval, update, listen, map
+@docs Socket, Msg, init, initWithParams, withDebug, withoutHeartbeat, withHeartbeatInterval, update, listen, map
 
 # Channels
 @docs join, leave
@@ -25,6 +25,7 @@ import Json.Encode as JE
 import Json.Decode as JD exposing (field)
 import Maybe exposing (andThen)
 import Time exposing (Time, every, second)
+import QueryString
 
 
 {-| Stores channels, event handlers, and configuration options
@@ -65,6 +66,24 @@ init path =
     , heartbeatIntervalSeconds = 30
     , withoutHeartbeat = False
     }
+
+
+{-| Initializes a `Socket` with the given path and params
+-}
+initWithParams : String -> Dict String String -> Socket msg
+initWithParams path params =
+    let
+        paramsList =
+            params |> Dict.toList
+
+        add =
+            \( k, v ) -> QueryString.add k v
+
+        queryString =
+            List.foldl add QueryString.empty paramsList
+                |> QueryString.render
+    in
+        init (path ++ queryString)
 
 
 {-| -}

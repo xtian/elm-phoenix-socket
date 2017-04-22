@@ -13,6 +13,7 @@
         "Phoenix.Presence"
     ],
     "dependencies": {
+        "Bogdanp/elm-querystring": "1.0.0 <= v < 2.0.0",
         "elm-lang/core": "5.0.0 <= v < 6.0.0",
         "elm-lang/websocket": "1.0.2 <= v < 2.0.0"
     },
